@@ -13,7 +13,7 @@ void  main(void) {
 
   int status;
   char   buf[BUF_SIZE];
-  int lower=1, upper=5;
+  int lower=1, upper=30;
   srand(time(0));
   int max1 = (rand() %
         (upper - lower + 1)) + lower;
