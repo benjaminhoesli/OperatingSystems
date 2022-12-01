@@ -54,17 +54,27 @@ void findWaitingTimeSJF(ProcessType plist[], int n)
   while (count>0){
     int curr=0;
     int low=100;
+    bool proceed=false;
     for (int i=0;i<n;i++){
-      if (bt_rem[i]<low && bt_rem[i]!=0){
+      if (bt_rem[i]<low && bt_rem[i]!=0 && plist[i].art<=t){
         low=bt_rem[i];
         curr=i;
+        proceed=true;
       }
     }
-    plist[curr].wt=t;
-    plist[curr].tat=t+plist[curr].bt;
-    t=t+plist[curr].bt;
-    bt_rem[curr]=0;
-    count-=1;
+    if (proceed){
+      if(bt_rem[curr]==1){
+        plist[curr].wt=t-plist[curr].art-plist[curr].bt+1;
+        plist[curr].tat=t-plist[curr].art+1;
+        count-=1;
+      }
+    bt_rem[curr]-=1;
+    proceed=false;
+    t++;
+    }
+    else{
+      t++;
+    }
   }
 } 
 
@@ -97,7 +107,7 @@ int my_comparer(const void *this, const void *that)
      if ( int_this == int_that ){
         return 0;
      }
-     else if ( int_this < int_that ) {
+     else if ( int_this > int_that ) {
        return -1;
      }
      else{
@@ -157,26 +167,30 @@ void findavgTimePriority( ProcessType plist[], int n)
       prio[i]=plist[i].pri;
     }
     qsort(prio,n,sizeof(int),my_comparer);
-    int t=0;
-    int count=0;
-    bool proceed=false;
-    while (count<n){
-      for (int i=0; i<n; i++){
-        if (plist[i].pri==prio[count] && plist[i].art<=t && count<n){
-          plist[i].wt=t-plist[i].art;
-          plist[i].tat=t+plist[i].bt;
-          t=t+plist[i].bt;
-          count++;
-          proceed=true;
+
+    int pids[n];
+    ProcessType plist2[n];
+    bool move =true;
+    for (int i=0; i<n; i++){
+      move=true;
+      for(int el=0;el<n;el++){
+        if (prio[i]==plist[el].pri && move==true && pids[plist[el].pid-1]!=1){
+          move=false;
+          plist2[i]=plist[el];
+          pids[plist[el].pid-1]=1;
         }
       }
-    if (proceed==false){
-      t++;
     }
-    else{
-      proceed=false;
+
+    for(int i=0; i<n; i++){
+      plist[i]=plist2[i];
     }
-    }
+
+    //Function to find waiting time of all processes 
+    findWaitingTime(plist, n); 
+  
+    //Function to find turn around time for all processes 
+    findTurnAroundTime(plist, n);     
   
     //Display processes along with all details 
     printf("\n*********\nPriority\n");
