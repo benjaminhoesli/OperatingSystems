@@ -21,7 +21,7 @@
 
 // Global variable for the restaurant.
 BENSCHILLIBOWL *bcb;
-
+int total=0;
 /**
  * Thread funtion that represents a customer. A customer should:
  *  - allocate space (memory) for an order.
@@ -30,13 +30,15 @@ BENSCHILLIBOWL *bcb;
  *  - add their order to the restaurant.
  */
 void* BENSCHILLIBOWLCustomer(void* tid) {
-  int customer_id = (int)(long) tid;
+  int customer_id = *((int*) tid);
   for(int i=0; i<ORDERS_PER_CUSTOMER;i++){
     Order* order=(Order*)malloc(sizeof(Order));
     order->menu_item=PickRandomMenuItem();
     order->customer_id=customer_id;
     order->next=NULL;
     AddOrder(bcb,order);
+    total++;
+    printf("Customer nr.%d added Order nr.%d\n", customer_id,total);
   }
 }
 
@@ -49,16 +51,16 @@ void* BENSCHILLIBOWLCustomer(void* tid) {
  * receive an order.
  */
 void* BENSCHILLIBOWLCook(void* tid) {
-  int cook_id = (int)(long) tid;
+  int cook_id = *((int*) tid);
 	int orders_fulfilled = 0;
-  while(bcb->orders_handled<=bcb->expected_num_orders){
-    Order *order=GetOrder(bcb);
-      if(order){
-        printf("Cook #%d fulfilled %d orders\n", cook_id, orders_fulfilled);
-        orders_fulfilled+=1;
-        free(order);
+  Order *order=GetOrder(bcb);
+  while(order){
+    orders_fulfilled+=1;
+    free(order);
+    order=GetOrder(bcb);
     }
-  }
+  printf("Cook #%d fulfilled %d orders\n", cook_id, orders_fulfilled);
+  return NULL;
 }
 
 /**
@@ -69,18 +71,20 @@ void* BENSCHILLIBOWLCook(void* tid) {
  *  - close the restaurant.
  */
 int main() {
+    srand(time(NULL));
     bcb=OpenRestaurant(BENSCHILLIBOWL_SIZE, EXPECTED_NUM_ORDERS);
+    bcb->expected_num_orders=EXPECTED_NUM_ORDERS;
     pthread_t customer[NUM_CUSTOMERS];
     pthread_t cook[NUM_COOKS];
     int cu[NUM_CUSTOMERS];
     int co[NUM_COOKS];
     for(int i=0; i<NUM_CUSTOMERS;i++){
       cu[i]=i+1;
-      pthread_create(&customer[i],NULL,&BENSCHILLIBOWLCustomer,(void*) &(cu[i]));
+      pthread_create(&customer[i],NULL,&BENSCHILLIBOWLCustomer,&cu[i]);
     }
     for(int i=0; i<NUM_COOKS;i++){
       co[i]=i+1;
-      pthread_create(&cook[i],NULL,&BENSCHILLIBOWLCustomer,(void*) &(co[i]));
+      pthread_create(&cook[i],NULL,&BENSCHILLIBOWLCook,&co[i]);
     }
     for(int i=0; i<NUM_CUSTOMERS;i++){
       pthread_join(customer[i],NULL);
